@@ -11,7 +11,6 @@ import (
 	"github.com/rainbowmga/timetravel/service"
 )
 
-// logError logs all non-nil errors
 func logError(err error) {
 	if err != nil {
 		log.Printf("error: %v", err)
@@ -21,8 +20,12 @@ func logError(err error) {
 func main() {
 	router := mux.NewRouter()
 
-	service := service.NewInMemoryRecordService()
-	api := api.NewAPI(&service)
+	sqliteService, err := service.NewSQLiteRecordService("./records.db")
+	if err != nil {
+		log.Fatalf("Failed to create SQLite service: %v", err)
+	}
+
+	api := api.NewAPI(sqliteService)
 
 	apiRoute := router.PathPrefix("/api/v1").Subrouter()
 	apiRoute.Path("/health").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

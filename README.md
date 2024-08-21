@@ -139,3 +139,14 @@ backend must delete that key of the record.
 < Content-Type: application/json; charset=utf-8
 {"id":1,"data":{"status":"ok"}}
 ```
+
+
+
+## Key changes and reasoning:
+- Added time import for timestamp handling.
+- Enhanced error definitions with more descriptive names.
+- Added comments to explain the purpose of each function and struct.
+- Included created_at and updated_at fields in the database table for better record tracking.
+- Used time.Now() to set timestamps when creating or updating records.
+- Improved error wrapping using fmt.Errorf with %w verb for better error context.
+- Used context.Context in function signatures for better cancellation and timeout support.
