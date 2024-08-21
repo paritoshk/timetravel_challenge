@@ -25,14 +25,14 @@ func main() {
 		log.Fatalf("Failed to create SQLite service: %v", err)
 	}
 
-	api := api.NewAPI(sqliteService)
+	apiHandler := api.NewAPI(sqliteService)
 
-	apiRoute := router.PathPrefix("/api/v1").Subrouter()
-	apiRoute.Path("/health").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	apiHandler.CreateRoutes(router)
+
+	router.Path("/health").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := json.NewEncoder(w).Encode(map[string]bool{"ok": true})
 		logError(err)
 	})
-	api.CreateRoutes(apiRoute)
 
 	address := "127.0.0.1:8000"
 	srv := &http.Server{
@@ -42,6 +42,6 @@ func main() {
 		ReadTimeout:  15 * time.Second,
 	}
 
-	log.Printf("listening on %s", address)
+	log.Printf("Server is running on %s", address)
 	log.Fatal(srv.ListenAndServe())
 }

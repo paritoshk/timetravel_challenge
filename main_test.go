@@ -26,8 +26,7 @@ func TestMain(m *testing.M) {
 
 	apiHandler := api.NewAPI(sqliteService)
 	router := mux.NewRouter()
-	apiRoute := router.PathPrefix("/api/v1").Subrouter()
-	apiHandler.CreateRoutes(apiRoute)
+	apiHandler.CreateRoutes(router)
 
 	testServer = httptest.NewServer(router)
 	defer testServer.Close()
@@ -40,7 +39,9 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestCreateRecord(t *testing.T) {
+// V1 API Tests
+
+func TestCreateRecordV1(t *testing.T) {
 	payload := map[string]string{"name": "John Doe", "email": "john@example.com"}
 	body, _ := json.Marshal(payload)
 	resp, err := http.Post(testServer.URL+"/api/v1/records/1", "application/json", bytes.NewBuffer(body))
@@ -60,7 +61,7 @@ func TestCreateRecord(t *testing.T) {
 	}
 }
 
-func TestGetRecord(t *testing.T) {
+func TestGetRecordV1(t *testing.T) {
 	resp, err := http.Get(testServer.URL + "/api/v1/records/1")
 	if err != nil {
 		t.Fatalf("Failed to get record: %v", err)
@@ -78,7 +79,7 @@ func TestGetRecord(t *testing.T) {
 	}
 }
 
-func TestUpdateRecord(t *testing.T) {
+func TestUpdateRecordV1(t *testing.T) {
 	payload := map[string]string{"email": "johndoe@example.com"}
 	body, _ := json.Marshal(payload)
 	req, _ := http.NewRequest("POST", testServer.URL+"/api/v1/records/1", bytes.NewBuffer(body))
@@ -101,7 +102,7 @@ func TestUpdateRecord(t *testing.T) {
 	}
 }
 
-func TestDeleteField(t *testing.T) {
+func TestDeleteFieldV1(t *testing.T) {
 	payload := map[string]*string{"name": nil}
 	body, _ := json.Marshal(payload)
 	req, _ := http.NewRequest("POST", testServer.URL+"/api/v1/records/1", bytes.NewBuffer(body))
@@ -124,7 +125,7 @@ func TestDeleteField(t *testing.T) {
 	}
 }
 
-func TestGetNonExistentRecord(t *testing.T) {
+func TestGetNonExistentRecordV1(t *testing.T) {
 	resp, err := http.Get(testServer.URL + "/api/v1/records/999")
 	if err != nil {
 		t.Fatalf("Failed to get non-existent record: %v", err)
@@ -133,5 +134,119 @@ func TestGetNonExistentRecord(t *testing.T) {
 
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("Expected status Bad Request; got %v", resp.Status)
+	}
+}
+
+// V2 API Tests
+
+func TestCreateRecordV2(t *testing.T) {
+	payload := map[string]string{"name": "Jane Doe", "email": "jane@example.com"}
+	body, _ := json.Marshal(payload)
+	resp, err := http.Post(testServer.URL+"/api/v2/records/2", "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		t.Fatalf("Failed to create record: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status OK; got %v", resp.Status)
+	}
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	if result["id"] != float64(2) {
+		t.Errorf("Expected id 2; got %v", result["id"])
+	}
+	if result["version"] != float64(1) {
+		t.Errorf("Expected version 1; got %v", result["version"])
+	}
+}
+
+func TestGetRecordV2(t *testing.T) {
+	resp, err := http.Get(testServer.URL + "/api/v2/records/2")
+	if err != nil {
+		t.Fatalf("Failed to get record: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status OK; got %v", resp.Status)
+	}
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	if result["id"] != float64(2) {
+		t.Errorf("Expected id 2; got %v", result["id"])
+	}
+	if result["version"] != float64(1) {
+		t.Errorf("Expected version 1; got %v", result["version"])
+	}
+}
+
+func TestUpdateRecordV2(t *testing.T) {
+	payload := map[string]string{"email": "janedoe@example.com"}
+	body, _ := json.Marshal(payload)
+	req, _ := http.NewRequest("POST", testServer.URL+"/api/v2/records/2", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("Failed to update record: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status OK; got %v", resp.Status)
+	}
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	if result["version"] != float64(2) {
+		t.Errorf("Expected version 2; got %v", result["version"])
+	}
+	data := result["data"].(map[string]interface{})
+	if data["email"] != "janedoe@example.com" {
+		t.Errorf("Expected updated email janedoe@example.com; got %v", data["email"])
+	}
+}
+
+func TestGetRecordVersionV2(t *testing.T) {
+	resp, err := http.Get(testServer.URL + "/api/v2/records/2?version=1")
+	if err != nil {
+		t.Fatalf("Failed to get record version: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status OK; got %v", resp.Status)
+	}
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	if result["id"] != float64(2) {
+		t.Errorf("Expected id 2; got %v", result["id"])
+	}
+	if result["version"] != float64(1) {
+		t.Errorf("Expected version 1; got %v", result["version"])
+	}
+}
+
+func TestGetRecordVersionsV2(t *testing.T) {
+	resp, err := http.Get(testServer.URL + "/api/v2/records/2/versions")
+	if err != nil {
+		t.Fatalf("Failed to get record versions: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status OK; got %v", resp.Status)
+	}
+
+	var result []int
+	json.NewDecoder(resp.Body).Decode(&result)
+	if len(result) != 2 {
+		t.Errorf("Expected 2 versions; got %v", len(result))
+	}
+	if result[0] != 1 || result[1] != 2 {
+		t.Errorf("Expected versions [1, 2]; got %v", result)
 	}
 }
