@@ -1,9 +1,5 @@
-# The Rainbow Take-Home Assignment
 
-Please create a __private__ version of this repo, complete the objectives, and once you
-are finished, send a link to your repo to us.
-
-# The Assignment
+# The Assignment (taken from Rainbow)
 
 Part of what an insurance company needs to have in its backend is a 
 record system. As an insurer, we need to keep an up-to-date record of each of our policy-holder's
